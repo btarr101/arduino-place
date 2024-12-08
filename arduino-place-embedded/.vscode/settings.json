@@ -1,0 +1,8 @@
+{
+	"files.associations": {
+		"*.css": "css",
+		"*.html": "jinja-html",
+		"*.tcc": "cpp",
+		"ostream": "cpp"
+	}
+}
