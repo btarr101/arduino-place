@@ -1,6 +1,10 @@
 {
 	"folders": [
 		{
+			"name": "SPA",
+			"path": "arduino-place-spa"
+		},
+		{
 			"name": "Server",
 			"path": "arduino-place-server"
 		},
