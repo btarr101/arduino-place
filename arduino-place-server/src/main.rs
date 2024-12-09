@@ -1,5 +1,5 @@
 use arduino_place_server::{
-    led_array::{persisted::PersistedLedArray, Color, LedArray, LED_COUNT},
+    led_array::{persisted::PersistedLedArray, Color, LedArray, LED_MAX_INDEX},
     ws::create_on_upgrade_callback,
     BroadcastMessage,
 };
@@ -42,7 +42,7 @@ async fn get_ws(
 
 #[derive(Deserialize, Validate)]
 struct LedParams {
-    #[validate(range(min = 0, max = LED_COUNT))]
+    #[validate(range(min = 0, max = LED_MAX_INDEX))]
     index: usize,
 }
 

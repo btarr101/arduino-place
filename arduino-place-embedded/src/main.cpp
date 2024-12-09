@@ -2,56 +2,51 @@
 #include <Arduino_LED_Matrix.h>
 #include <WiFiS3.h>
 #include <WebSocketsClient.h>
+#include <FastLED.h>
 
-WebSocketsClient webSocketsClient;
-WiFiClient client;
+#define WS_HOST "192.168.1.47"
+#define WS_PORT 8000
+#define WS_URL "/ws"
 
-#define WIFI_SSID "Wouldn't you"
-#define WIFI_PASS "like to know"
+#define LED_TYPE WS2811
+#define LED_PIN 5
+#define LED_COLOR_ORDER RGB
+#define LED_COUNT 100
+#define LED_BRIGHTNESS 128
 
+WebSocketsClient wsClient;
+CRGB leds[LED_COUNT];
+bool showLeds = false;
+ArduinoLEDMatrix matrix;
+
+void safeBoot();
 void setupWifi();
-void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
-{
-  switch (type)
-  {
-  case WStype_DISCONNECTED:
-    Serial.println("[WSc] Disconnected!");
-    break;
-  case WStype_CONNECTED:
-    Serial.println("[WSc] Connected!");
+void setupLeds();
+void setupWs();
+void wsEvent(WStype_t type, uint8_t *payload, size_t length);
+void wsHandleSyncOne(uint8_t payload[4]);
+void wsHandleSyncAll(uint8_t payload[3 * LED_COUNT]);
 
-    // send message to server when Connected
-    webSocketsClient.sendTXT("Connected");
-    break;
-  case WStype_TEXT:
-    Serial.print("[WSc] get text:");
-    Serial.println((char *)payload);
-    break;
-  case WStype_BIN:
-    Serial.println("[WSc] get bin:");
-    Serial.print("[");
-    for (size_t i = 0; i < length; i++)
-    {
-      if (i > 0)
-      {
-        Serial.print(" ");
-      }
-      Serial.print(payload[i], HEX);
-    }
-    Serial.println("]");
-    break;
-  case WStype_ERROR:
-  case WStype_FRAGMENT_TEXT_START:
-  case WStype_FRAGMENT_BIN_START:
-  case WStype_FRAGMENT:
-  case WStype_FRAGMENT_FIN:
-    break;
+void setup()
+{
+  safeBoot();
+  setupWifi();
+  setupWs();
+  setupLeds();
+  matrix.begin();
+}
+
+void loop()
+{
+  wsClient.loop();
+  if (showLeds)
+  {
+    FastLED.show();
+    showLeds = false;
   }
 }
 
-ArduinoLEDMatrix matrix;
-
-void setup()
+void safeBoot()
 {
   Serial.begin(115200);
   while (!Serial)
@@ -71,23 +66,6 @@ void setup()
     Serial.flush();
     delay(1000);
   }
-
-  setupWifi();
-
-  // event handler
-  webSocketsClient.onEvent(webSocketEvent);
-  // try ever 5000 again if connection has failed
-  webSocketsClient.setReconnectInterval(5000);
-  webSocketsClient.begin("192.168.1.47", 8010, "/ws");
-  // webSocketsClient.begin("ws.ifelse.io", 80);
-  // webSocketsClient.begin("demo.piesocket.com", 80, "/v3/channel_123?api_key=VCXCEuvhGcBDP7XhiJJUDvR1e1D3eiVjgZ9VRiaV&notify_self");
-  delay(1000);
-
-  // webSocketsClient.enableHeartbeat(10000, 1000, 5);
-
-  pinMode(LED_BUILTIN, OUTPUT);
-
-  matrix.begin();
 }
 
 void setupWifi()
@@ -131,68 +109,86 @@ void setupWifi()
   Serial.println(ip);
 }
 
-/* just wrap the received data up to 80 columns in the serial print*/
-/* -------------------------------------------------------------------------- */
-void read_response()
+void setupWs()
 {
-  /* -------------------------------------------------------------------------- */
-  uint32_t received_data_num = 0;
-  while (client.available())
+  wsClient.onEvent(wsEvent);
+  wsClient.setReconnectInterval(5000);
+  wsClient.begin(WS_HOST, WS_PORT, WS_URL);
+
+  // delay(1000);
+}
+
+void setupLeds()
+{
+  FastLED.addLeds<LED_TYPE, LED_PIN, LED_COLOR_ORDER>(leds, LED_COUNT)
+      .setCorrection(TypicalLEDStrip)
+      .setRgbw();
+  FastLED.setBrightness(LED_BRIGHTNESS);
+}
+
+void wsEvent(WStype_t type, uint8_t *payload, size_t length)
+{
+  Serial.print("[WSc] recieved message type ");
+  Serial.println(type);
+  Serial.print("[WSc] message size: ");
+  Serial.println(length);
+
+  switch (type)
   {
-    /* actual data reception */
-    char c = client.read();
-    /* print data to serial port */
-    Serial.print(c);
-    /* wrap data to 80 columns*/
-    received_data_num++;
-    if (received_data_num % 80 == 0)
+  case WStype_CONNECTED:
+    wsClient.sendTXT("Connected");
+    break;
+  case WStype_BIN:
+    if (length == 3 * LED_COUNT)
     {
-      Serial.println();
+      wsHandleSyncAll(payload);
     }
+    else if (length == 4)
+    {
+      wsHandleSyncOne(payload);
+    }
+    break;
+  case WStype_DISCONNECTED:
+  case WStype_TEXT:
+  case WStype_ERROR:
+  case WStype_FRAGMENT_TEXT_START:
+  case WStype_FRAGMENT_BIN_START:
+  case WStype_FRAGMENT:
+  case WStype_FRAGMENT_FIN:
+    break;
   }
 }
 
-const uint32_t happy[] = {
-    0x19819,
-    0x80000001,
-    0x81f8000};
-
-const uint32_t heart[] = {
-    0x3184a444,
-    0x44042081,
-    0x100a0040};
-
-void loop()
+void wsHandleSyncOne(uint8_t payload[4])
 {
-  static unsigned long last_ping = 0;
-  // put your main code here, to run repeatedly:
-  // matrix.loadFrame(happy);
-  // delay(500);
-  // matrix.loadFrame(heart);
-  // delay(500);
+  size_t index = payload[0];
+  uint8_t r = payload[1];
+  uint8_t g = payload[2];
+  uint8_t b = payload[3];
 
-  // read_response();
+  Serial.print("[Sync one]: ");
+  Serial.print("index:");
+  Serial.print(index);
+  Serial.print(", r:");
+  Serial.print(r);
+  Serial.print(", g:");
+  Serial.print(g);
+  Serial.print(", b:");
+  Serial.println(b);
 
-  // // if the server's disconnected, stop the client:
-  // if (!client.connected())
-  // {
-  //   Serial.println();
-  //   Serial.println("disconnecting from server.");
-  //   client.stop();
+  leds[index] = CRGB(r, g, b);
+  showLeds = true;
+}
 
-  //   // do nothing forevermore:
-  //   while (true)
-  //     ;
-  // }
-
-  webSocketsClient.loop();
-  unsigned long current = millis();
-  if (webSocketsClient.isConnected() && (current - last_ping) > 5000)
+void wsHandleSyncAll(uint8_t payload[3 * LED_COUNT])
+{
+  for (size_t i = 0; i < LED_COUNT; ++i)
   {
-    webSocketsClient.sendTXT("Hello there kenobi!!!");
-    last_ping = current;
+    size_t red_offset = i * 3;
+    leds[i] = CRGB(
+        payload[red_offset],
+        payload[red_offset + 1],
+        payload[red_offset + 2]);
   }
-  // Serial.print("[WSc] Connected: ");
-  // Serial.println(webSocketsClient.isConnected());
-  // ;
+  showLeds = true;
 }
