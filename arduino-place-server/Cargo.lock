@@ -65,6 +65,7 @@ dependencies = [
  "shuttle-runtime",
  "tokio",
  "tower-http",
+ "tracing",
  "validator",
 ]
 

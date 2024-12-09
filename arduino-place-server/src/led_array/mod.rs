@@ -40,14 +40,12 @@ impl DerefMut for LedArray {
     fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
 }
 
-// TODO: revert the list serialization
 impl Serialize for LedArray {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        let vec = Vec::<u8>::from(*self);
-        vec.serialize(serializer)
+        self.to_vec().serialize(serializer)
     }
 }
 
@@ -56,15 +54,8 @@ impl<'de> Deserialize<'de> for LedArray {
     where
         D: serde::Deserializer<'de>,
     {
-        let vec = <Vec<u8>>::deserialize(deserializer)?;
+        let vec = <Vec<Color>>::deserialize(deserializer)?;
         let array: [Color; LED_COUNT] = vec
-            .chunks(3)
-            .map(|arr| Color {
-                red: arr[0],
-                green: arr[1],
-                blue: arr[2],
-            })
-            .collect::<Vec<_>>()
             .try_into()
             .map_err(|vec| serde::de::Error::custom(format!("{:?}", vec)))?;
         Ok(Self(array))

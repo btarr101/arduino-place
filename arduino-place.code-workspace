@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"name": "Server",
+			"path": "arduino-place-server"
+		},
+		{
+			"name": "Embedded",
+			"path": "arduino-place-embedded"
+		}
+	]
+}
