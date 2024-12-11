@@ -31,10 +31,25 @@ public:
 	};
 	SendResponse send(const char *text);
 
-	void loop();
+	enum PayloadType
+	{
+		NONE,
+		BINARY,
+	};
+	struct Payload
+	{
+		PayloadType type;
+		byte *bytes;
+		size_t length;
+	};
+	Payload loop();
 
 private:
 	static const size_t MAX_PAYLOAD_LENGTH = 300;
+
+	const char *_host;
+	uint16_t _port;
+	const char *_path;
 
 	bool _fin;
 	byte _opcode;

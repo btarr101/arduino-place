@@ -2,17 +2,8 @@
 #include <WiFiS3.h>
 #include <FastLED.h>
 
+#include "globals.h"
 #include "ws.h"
-
-#define WS_HOST "arduino-place-server-lrpx.shuttle.app"
-#define WS_PORT 443
-#define WS_URL "/ws"
-
-#define LED_TYPE WS2811
-#define LED_PIN 5
-#define LED_COLOR_ORDER RGB
-#define LED_COUNT 100
-#define LED_BRIGHTNESS 128
 
 CRGB leds[LED_COUNT];
 bool showLeds = false;
@@ -39,8 +30,27 @@ void loop()
 {
   static bool sentConnected = false;
 
-  wsClient.loop();
-  if (!sentConnected && wsClient.connected())
+  WsClient::Payload payload = wsClient.loop();
+  if (payload.type == WsClient::PayloadType::BINARY)
+  {
+    my_debug("[WSc] Payload:");
+    for (int i = 0; i < payload.length; i++)
+    {
+      my_debug(' ');
+      my_debug_byte(payload.bytes[i]);
+    }
+    my_debugln();
+
+    if (payload.length == 3 * LED_COUNT)
+    {
+      wsHandleSyncAll(payload.bytes);
+    }
+    else if (payload.length == 4)
+    {
+      wsHandleSyncOne(payload.bytes);
+    }
+  }
+  else if (!sentConnected && wsClient.connected())
   {
     wsClient.send("Connected");
     sentConnected = true;
@@ -55,22 +65,16 @@ void loop()
 
 void safeBoot()
 {
-  Serial.begin(115200);
-  while (!Serial)
-  {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
-
-  Serial.println();
-  Serial.println();
-  Serial.println();
+  my_debug_begin(115200);
+  my_debugln();
+  my_debugln();
+  my_debugln();
 
   for (uint8_t t = 4; t > 0; t--)
   {
-    Serial.print("[SETUP] BOOT WAIT (");
-    Serial.print(t);
-    Serial.println(")");
-    Serial.flush();
+    my_debug("[SETUP] BOOT WAIT (");
+    my_debug(t);
+    my_debugln(")");
     delay(1000);
   }
 }
@@ -80,7 +84,7 @@ void setupWifi()
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE)
   {
-    Serial.println("[Wifi]: Communication with WiFi module failed!");
+    my_debugln("[Wifi]: Communication with WiFi module failed!");
     // don't continue
     for (;;)
       ;
@@ -89,18 +93,18 @@ void setupWifi()
   String firmware_version = WiFi.firmwareVersion();
   if (firmware_version < WIFI_FIRMWARE_LATEST_VERSION)
   {
-    Serial.println("[Wifi]: Please upgrade the firmware");
+    my_debugln("[Wifi]: Please upgrade the firmware");
   }
 
-  Serial.println("[Wifi]: Connecting");
+  my_debugln("[Wifi]: Connecting");
 
   int status = WL_IDLE_STATUS;
 
   // attempt to connect to WiFi network:
   while (status != WL_CONNECTED)
   {
-    Serial.print("[Wifi]: Attempting to connect to SSID: ");
-    Serial.println(WIFI_SSID);
+    my_debug("[Wifi]: Attempting to connect to SSID: ");
+    my_debugln(WIFI_SSID);
 
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
     status = WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -108,12 +112,12 @@ void setupWifi()
     delay(1000);
   }
 
-  Serial.println("[Wifi]: Connected!");
+  my_debugln("[Wifi]: Connected!");
 
   // print your board's IP address:
   IPAddress ip = WiFi.localIP();
-  Serial.print("[Wifi]: IP Address: ");
-  Serial.println(ip);
+  my_debug("[Wifi]: IP Address: ");
+  my_debugln(ip);
 }
 
 void setupWs()
@@ -121,11 +125,11 @@ void setupWs()
   WsClient::ConnectResponse response = wsClient.connect(WS_HOST, WS_PORT, WS_URL);
   if (response == WsClient::ConnectResponse::FAILURE)
   {
-    Serial.println("[WSc] Failed to initiate connecting!");
+    my_debugln("[WSc] Failed to initiate connecting!");
     for (;;)
       ;
   }
-  Serial.println("[WSc] Started connecting...");
+  my_debugln("[WSc] Started connecting...");
 }
 
 void setupLeds()
@@ -136,39 +140,6 @@ void setupLeds()
   FastLED.setBrightness(LED_BRIGHTNESS);
 }
 
-// void wsEvent(WStype_t type, uint8_t *payload, size_t length)
-// {
-//   Serial.print("[WSc] recieved message type ");
-//   Serial.println(type);
-//   Serial.print("[WSc] message size: ");
-//   Serial.println(length);
-
-//   switch (type)
-//   {
-//   case WStype_CONNECTED:
-//     wsClient.sendTXT("Connected");
-//     break;
-//   case WStype_BIN:
-//     if (length == 3 * LED_COUNT)
-//     {
-//       wsHandleSyncAll(payload);
-//     }
-//     else if (length == 4)
-//     {
-//       wsHandleSyncOne(payload);
-//     }
-//     break;
-//   case WStype_DISCONNECTED:
-//   case WStype_TEXT:
-//   case WStype_ERROR:
-//   case WStype_FRAGMENT_TEXT_START:
-//   case WStype_FRAGMENT_BIN_START:
-//   case WStype_FRAGMENT:
-//   case WStype_FRAGMENT_FIN:
-//     break;
-//   }
-// }
-
 void wsHandleSyncOne(uint8_t payload[4])
 {
   size_t index = payload[0];
@@ -176,15 +147,15 @@ void wsHandleSyncOne(uint8_t payload[4])
   uint8_t g = payload[2];
   uint8_t b = payload[3];
 
-  Serial.print("[Sync one]: ");
-  Serial.print("index:");
-  Serial.print(index);
-  Serial.print(", r:");
-  Serial.print(r);
-  Serial.print(", g:");
-  Serial.print(g);
-  Serial.print(", b:");
-  Serial.println(b);
+  my_debug("[Sync one]: ");
+  my_debug("index:");
+  my_debug(index);
+  my_debug(", r:");
+  my_debug(r);
+  my_debug(", g:");
+  my_debug(g);
+  my_debug(", b:");
+  my_debugln(b);
 
   leds[index] = CRGB(r, g, b);
   showLeds = true;

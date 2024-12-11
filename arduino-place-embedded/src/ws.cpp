@@ -1,5 +1,6 @@
 #include <base64.hpp>
 
+#include "globals.h"
 #include "ws.h"
 
 #define WS_KEY_LENGTH 16
@@ -24,10 +25,14 @@ bool WsClient::connected()
 
 WsClient::ConnectResponse WsClient::connect(const char *host, uint16_t port, const char *path)
 {
+	_host = host;
+	_port = port;
+	_path = path;
+
 	_wifiClient.stop();
 	_status = Status::DISCONNECTED;
 
-	if (!_wifiClient.connect(host, port))
+	if (!_wifiClient.connect(_host, _port))
 	{
 		return ConnectResponse::FAILURE;
 	}
@@ -44,11 +49,11 @@ WsClient::ConnectResponse WsClient::connect(const char *host, uint16_t port, con
 	}
 
 	_wifiClient.print("GET ");
-	_wifiClient.print(path);
+	_wifiClient.print(_path);
 	_wifiClient.println(" HTTP/1.1");
 
 	_wifiClient.print("Host: ");
-	_wifiClient.println(host);
+	_wifiClient.println(_host);
 
 	_wifiClient.println("Upgrade: websocket");
 	_wifiClient.println("Connection: Upgrade");
@@ -108,20 +113,26 @@ WsClient::SendResponse WsClient::send(const char *text)
 }
 
 // TODO: Add PING logic
-void WsClient::loop()
+WsClient::Payload WsClient::loop()
 {
+	if (!_wifiClient.connected())
+	{
+		my_debug("[WS] Disconnected, attempting reconnect");
+		connect(_host, _port, _path);
+	}
+
 	switch (_status)
 	{
 	case Status::CONNECTING:
 	{
 		size_t read = _wifiClient.readBytesUntil('\n', _payload, sizeof(_payload));
 		_payload[read] = '\0';
-		Serial.print("[WS] upgrade payload line: ");
-		Serial.println((char *)_payload);
+		my_debug("[WS] upgrade payload line: ");
+		my_debugln((char *)_payload);
 		if (strcmp((char *)_payload, "\r") != 0)
 			break;
 
-		Serial.println("[WS] Connected! Changing status to IDLE");
+		my_debugln("[WS] Connected! Changing status to IDLE");
 		_status = Status::IDLE;
 	}
 	case Status::IDLE:
@@ -143,16 +154,19 @@ void WsClient::loop()
 
 		_maskingKeyLoaded = false;
 
-		Serial.println("--Received Header--");
-		Serial.print("[WS] Header[0]: fin=");
-		Serial.print(_fin);
-		Serial.print(" opcode=");
-		Serial.println(_opcode);
+		my_debugln();
+		my_debugln("[WS] -- Received Payload Header --");
 
-		Serial.print("[WS] Header[1]: mask=");
-		Serial.print(_mask);
-		Serial.print(", payloadLength=");
-		Serial.println(_payloadLength);
+		my_debug("[WS] Header[0]: fin=");
+		my_debug(_fin);
+		my_debug(" opcode=");
+		my_debugln(_opcode);
+
+		my_debug("[WS] Header[1]: mask=");
+		my_debug(_mask);
+		my_debug(", payloadLength=");
+		my_debugln(_payloadLength);
+		my_debugln();
 
 		_status = Status::RECEIVING;
 
@@ -168,8 +182,8 @@ void WsClient::loop()
 				_payloadLength = (extendedLength[0] << 8) | extendedLength[1];
 			}
 
-			Serial.print("[WS] extendedPayloadLength=");
-			Serial.println(_payloadLength);
+			my_debug("[WS] extendedPayloadLength=");
+			my_debugln(_payloadLength);
 		}
 
 		// Read masking key
@@ -181,13 +195,13 @@ void WsClient::loop()
 			_wifiClient.read(_maskingKey, 4);
 			_maskingKeyLoaded = true;
 
-			Serial.print("[WS] read masking key");
+			my_debug("[WS] read masking key");
 		}
 
 		// Read payload
 		if (_wifiClient.available() < _payloadLength)
 		{
-			Serial.print(_wifiClient.available());
+			my_debug(_wifiClient.available());
 			break;
 		}
 
@@ -201,18 +215,18 @@ void WsClient::loop()
 			}
 		}
 
-		// TODO: either return a payload from the loop or have registered
-		// callbacks
-		Serial.print("[WS] Payload: ");
-		for (int i = 0; i < _payloadLength; i++)
-		{
-			Serial.print(_payload[i], HEX);
-		}
-		Serial.println();
-
 		_status = Status::IDLE;
-		break;
+
+		return {
+			PayloadType::BINARY,
+			_payload,
+			_payloadLength};
 	case Status::DISCONNECTED:
 		break;
 	}
+
+	return {
+		PayloadType::NONE,
+		nullptr,
+		0};
 }

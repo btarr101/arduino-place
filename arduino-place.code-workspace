@@ -1,6 +1,10 @@
 {
 	"folders": [
 		{
+			"name": "Root",
+			"path": "."
+		},
+		{
 			"name": "SPA",
 			"path": "arduino-place-spa"
 		},
@@ -12,5 +16,5 @@
 			"name": "Embedded",
 			"path": "arduino-place-embedded"
 		}
-	]
+	],
 }
