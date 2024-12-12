@@ -17,6 +17,12 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
+      react-use-websocket:
+        specifier: ^4.11.1
+        version: 4.11.1
+      type-fest:
+        specifier: ^4.30.0
+        version: 4.30.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.15.0
@@ -1169,6 +1175,9 @@ packages:
     resolution: {integrity: sha512-jCvmsr+1IUSMUyzOkRcvnVbX3ZYC6g9TDrDbFuFmRDq7PD4yaGbLKNQL6k2jnArV8hjYxh7hVhAZB6s9HDGpZA==}
     engines: {node: '>=0.10.0'}
 
+  react-use-websocket@4.11.1:
+    resolution: {integrity: sha512-39e8mK2a2A1h8uY3ePF45b2q0vwMOmaEy7J5qEhQg4n7vYa5oDLmqutG36kZQgAQ/3KCZS0brlGRbbZJ0+zfKQ==}
+
   react@18.3.1:
     resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
     engines: {node: '>=0.10.0'}
@@ -1292,6 +1301,10 @@ packages:
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
+
+  type-fest@4.30.0:
+    resolution: {integrity: sha512-G6zXWS1dLj6eagy6sVhOMQiLtJdxQBHIA9Z6HFUNLOlr6MFOgzV8wvmidtPONfPtEUv0uZsy77XJNzTAfwPDaA==}
+    engines: {node: '>=16'}
 
   typescript-eslint@8.18.0:
     resolution: {integrity: sha512-Xq2rRjn6tzVpAyHr3+nmSg1/9k9aIHnJ2iZeOH7cfGOWqTkXTm3kwpQglEuLGdNrYvPF+2gtAs+/KF5rjVo+WQ==}
@@ -2417,6 +2430,8 @@ snapshots:
 
   react-refresh@0.14.2: {}
 
+  react-use-websocket@4.11.1: {}
+
   react@18.3.1:
     dependencies:
       loose-envify: 1.4.0
@@ -2574,6 +2589,8 @@ snapshots:
   type-check@0.4.0:
     dependencies:
       prelude-ls: 1.2.1
+
+  type-fest@4.30.0: {}
 
   typescript-eslint@8.18.0(eslint@9.16.0(jiti@1.21.6))(typescript@5.6.3):
     dependencies:
