@@ -7,13 +7,16 @@ use axum::{
     extract::{FromRef, Path, State, WebSocketUpgrade},
     response::IntoResponse,
     routing::get,
-    Json, Router,
+    Form, Json, Router,
 };
 use axum_valid::Valid;
 use serde::Deserialize;
 use shuttle_persist::PersistInstance;
 use tokio::sync::broadcast;
-use tower_http::trace::TraceLayer;
+use tower_http::{
+    cors::{AllowMethods, AllowOrigin, CorsLayer},
+    trace::TraceLayer,
+};
 use validator::Validate;
 
 #[derive(Clone)]
@@ -61,7 +64,7 @@ async fn post_led(
     State(led_array): State<PersistedLedArray>,
     State(tx): State<broadcast::Sender<BroadcastMessage>>,
     Valid(Path(LedParams { index })): Valid<Path<LedParams>>,
-    Json(color): Json<Color>,
+    Form(color): Form<Color>,
 ) {
     led_array.set_led(index, color).await.expect("in bounds");
     let _ = tx.send(BroadcastMessage::LedUpdated { index, color });
@@ -73,11 +76,16 @@ async fn main(#[shuttle_persist::Persist] persist: PersistInstance) -> shuttle_a
     let tx = broadcast::Sender::<BroadcastMessage>::new(16);
     let app_state = AppState { led_array, tx };
 
+    let cors = CorsLayer::new()
+        .allow_methods(AllowMethods::any())
+        .allow_origin(AllowOrigin::any());
+
     let router = Router::new()
         .route("/ws", get(get_ws))
         .route("/leds", get(get_leds))
         .route("/leds/:index", get(get_led).post(post_led))
         .layer(TraceLayer::new_for_http())
+        .layer(cors)
         .with_state(app_state);
 
     Ok(router.into())
