@@ -14,7 +14,6 @@ void safeBoot();
 void setupWifi();
 void setupLeds();
 void setupWs();
-// void wsEvent(WStype_t type, uint8_t *payload, size_t length);
 void wsHandleSyncOne(uint8_t payload[4]);
 void wsHandleSyncAll(uint8_t payload[3 * LED_COUNT]);
 

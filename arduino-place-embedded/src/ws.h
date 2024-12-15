@@ -30,11 +30,14 @@ public:
 		NOT_CONNECTED
 	};
 	SendResponse send(const char *text);
+	SendResponse ping();
 
 	enum PayloadType
 	{
 		NONE,
+		UNKOWN,
 		BINARY,
+		PONG,
 	};
 	struct Payload
 	{
@@ -45,12 +48,15 @@ public:
 	Payload loop();
 
 private:
+	SendResponse _sendRaw(byte opcode, const byte *bytes, uint8_t length);
+
 	static const size_t MAX_PAYLOAD_LENGTH = 300;
 
 	const char *_host;
 	uint16_t _port;
 	const char *_path;
 
+	unsigned long _lastPing = 0;
 	bool _fin;
 	byte _opcode;
 	bool _mask;
