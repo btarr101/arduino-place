@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use derive_more::derive::Display;
 use serde::{Deserialize, Serialize};
 
-pub const LED_COUNT: usize = 100;
+pub const LED_COUNT: usize = 250;
 pub const LED_MAX_INDEX: usize = LED_COUNT - 1;
 
 pub mod persisted;
