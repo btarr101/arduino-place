@@ -85,9 +85,10 @@ async fn main(#[shuttle_persist::Persist] persist: PersistInstance) -> shuttle_a
         .route("/ws", get(get_ws))
         .route("/leds", get(get_leds))
         .route("/leds/:index", get(get_led).post(post_led))
-        .layer(TraceLayer::new_for_http())
         .with_state(app_state)
-        .fallback_service(ServeDir::new("./public").fallback(ServeFile::new("./public/index.html")))
+        .nest_service("/", ServeFile::new("static/index.html"))
+        .nest_service("/assets", ServeDir::new("static/assets"))
+        .layer(TraceLayer::new_for_http())
         .layer(cors);
 
     Ok(router.into())
