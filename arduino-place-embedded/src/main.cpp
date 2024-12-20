@@ -134,8 +134,7 @@ void setupWs()
 void setupLeds()
 {
   FastLED.addLeds<LED_TYPE, LED_PIN, LED_COLOR_ORDER>(leds, LED_COUNT)
-      .setCorrection(TypicalLEDStrip)
-      .setRgbw();
+      .setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(LED_BRIGHTNESS);
 }
 

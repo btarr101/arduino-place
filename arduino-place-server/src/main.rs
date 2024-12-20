@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use arduino_place_server::{
     led_array::{persisted::PersistedLedArray, Color, LedArray, LED_MAX_INDEX},
     ws::create_on_upgrade_callback,
@@ -15,6 +17,7 @@ use shuttle_persist::PersistInstance;
 use tokio::sync::broadcast;
 use tower_http::{
     cors::{AllowMethods, AllowOrigin, CorsLayer},
+    services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
 use validator::Validate;
@@ -81,6 +84,16 @@ async fn main(#[shuttle_persist::Persist] persist: PersistInstance) -> shuttle_a
         .allow_origin(AllowOrigin::any());
 
     let router = Router::new()
+        .nest_service(
+            "/",
+            ServeDir::new(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("public")).fallback(
+                ServeFile::new(
+                    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                        .join("public")
+                        .join("index.html"),
+                ),
+            ),
+        )
         .route("/ws", get(get_ws))
         .route("/leds", get(get_leds))
         .route("/leds/:index", get(get_led).post(post_led))

@@ -7,8 +7,8 @@
 #define LED_TYPE WS2811
 #define LED_PIN 4
 #define LED_COLOR_ORDER RGB
-#define LED_COUNT 100
-#define LED_BRIGHTNESS 128
+#define LED_COUNT 250
+#define LED_BRIGHTNESS 64
 
 #define DEBUG
 #ifdef DEBUG

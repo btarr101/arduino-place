@@ -16,7 +16,7 @@ function rgb(r: number, g: number, b: number): RgbColor {
 const randint = (min: number, max: number) =>
   min + Math.floor(Math.random() * (max - min));
 
-const treeConfig = [19, 17, 15, 13, 11, 9, 7, 5, 3, 1];
+const treeConfig = [42, 35, 24, 44, 29, 27, 24, 25, 0];
 const rise = 1.0 / treeConfig.length;
 
 const ledPositions = treeConfig.flatMap((ledsPerRow, rowIndex) => {
@@ -81,7 +81,7 @@ function LedButton({
       style={{
         top: `${y * 100}%`,
         left: `${x * 100}%`,
-        transform: "translate(50%, -100%)",
+        transform: "translate(25%, -100%)",
         backgroundColor: `rgb(${color.r}, ${color.g}, ${color.b})`,
       }}
       onMouseEnter={() => {

@@ -50,7 +50,7 @@ public:
 private:
 	SendResponse _sendRaw(byte opcode, const byte *bytes, uint8_t length);
 
-	static const size_t MAX_PAYLOAD_LENGTH = 300;
+	static const size_t MAX_PAYLOAD_LENGTH = LED_COUNT * 3;
 
 	const char *_host;
 	uint16_t _port;

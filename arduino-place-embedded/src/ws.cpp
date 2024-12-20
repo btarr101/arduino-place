@@ -5,7 +5,7 @@
 
 #define WS_KEY_LENGTH 16
 #define WS_KEY_MAX_LENGTH ((WS_KEY_LENGTH + 2) / 3 * 4)
-#define WS_PING_INTERVAL 5000
+#define WS_PING_INTERVAL 20000
 
 WsClient::WsClient() : _status(Status::DISCONNECTED) {}
 
